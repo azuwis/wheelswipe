@@ -39,10 +39,12 @@
 
 /* Default parameters */
 #define DEFAULT_IDLE_TIMEOUT_MS 500
+#define DEFAULT_SCROLL_RATIO 1
 #define DEFAULT_SCROLL_TO_PIXEL_RATIO (-1)
 
 /* Runtime parameters */
 static int idle_timeout_us;
+static int scroll_ratio;
 static int scroll_to_pixel_ratio;
 
 /* Global state */
@@ -79,6 +81,15 @@ static void load_config(void)
         if (val > 0) {
             idle_timeout_us = val * 1000;
             printf("IDLE_TIMEOUT_MS = %d\n", val);
+        }
+    }
+
+    env_val = getenv("SCROLL_RATIO");
+    if (env_val) {
+        int val = atoi(env_val);
+        if (val != 0) {
+            scroll_ratio = val;
+            printf("SCROLL_RATIO = %d\n", val);
         }
     }
 
@@ -450,11 +461,16 @@ int main(int argc, char *argv[])
             break;
         }
 
-        /* Handle horizontal scroll wheel events */
-        if (ev.type == EV_REL &&
-            (ev.code == REL_HWHEEL || ev.code == REL_HWHEEL_HI_RES)) {
-            handle_hwheel(ev.value);
-            continue; /* Don't forward */
+        if (ev.type == EV_REL) {
+            if (ev.code == REL_HWHEEL_HI_RES || ev.code == REL_HWHEEL) {
+              /* Handle horizontal scroll wheel events */
+              handle_hwheel(ev.value);
+              continue; /* Don't forward */
+            } else if (ev.code == REL_WHEEL_HI_RES || ev.code == REL_WHEEL) {
+              /* Handle vertical scroll wheel events */
+              send_event(virtual_mouse_fd, ev.type, ev.code, ev.value * scroll_ratio);
+              continue; /* Don't forward */
+            }
         }
 
         /* Forward other events to virtual mouse */
