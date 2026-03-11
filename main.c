@@ -71,6 +71,7 @@ static void load_config(void)
 
     /* Set default values */
     idle_timeout_us = DEFAULT_IDLE_TIMEOUT_MS * 1000;
+    scroll_ratio = DEFAULT_SCROLL_RATIO;
     scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
     finger1_x = CENTER_X - FINGER_OFFSET_X;
     finger2_x = CENTER_X + FINGER_OFFSET_X;
