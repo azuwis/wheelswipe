@@ -8,9 +8,9 @@
  *   IDLE_TIMEOUT_MS        - timeout to release touch (milliseconds), default 500
  *   SCROLL_TO_PIXEL_RATIO  - scroll value to pixel ratio, default -1
  *
- * Compile: gcc -o hwheel2swipe main.c -lpthread
- * Run: sudo ./hwheel2swipe /dev/input/event7
- *      IDLE_TIMEOUT_MS=300 SCROLL_TO_PIXEL_RATIO=-2 sudo -E ./hwheel2swipe /dev/input/event7
+ * Compile: gcc -o wheelswipe main.c -lpthread
+ * Run: sudo ./wheelswipe /dev/input/event7
+ *      IDLE_TIMEOUT_MS=300 SCROLL_TO_PIXEL_RATIO=-2 sudo -E ./wheelswipe /dev/input/event7
  */
 
 #include <stdio.h>
