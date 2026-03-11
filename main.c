@@ -25,6 +25,7 @@
 #include <linux/uinput.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <poll.h>
 
 /* Touchpad parameters */
 #define TOUCHPAD_MAX_X 1919
@@ -454,8 +455,22 @@ int main(int argc, char *argv[])
 
     printf("Listening for events... Press Ctrl+C to exit\n");
 
-    /* Main event loop */
+    /* Main event loop with poll to allow immediate shutdown */
+    struct pollfd fds[1];
+    fds[0].fd = mouse_fd;
+    fds[0].events = POLLIN;
+
     while (running) {
+        /* Wait for 500ms for data, then check 'running' flag again */
+        int ret = poll(fds, 1, 500);
+
+        if (ret < 0) {
+            if (errno == EINTR) continue; /* Signal received, check running flag */
+            break;
+        }
+
+        if (ret == 0) continue; /* Timeout, check running flag */
+
         ssize_t n = read(mouse_fd, &ev, sizeof(ev));
         if (n != sizeof(ev)) {
             if (errno == EINTR) continue;
