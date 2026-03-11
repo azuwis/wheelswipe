@@ -114,7 +114,12 @@ static void send_event(int fd, int type, int code, int value)
     ev.type = type;
     ev.code = code;
     ev.value = value;
-    write(fd, &ev, sizeof(ev));
+
+    if (write(fd, &ev, sizeof(ev)) < 0) {
+      if (running) {
+        perror("Failed to write event");
+      }
+    }
 }
 
 /* Send sync event */
