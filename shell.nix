@@ -2,4 +2,4 @@
   pkgs ? import <nixpkgs> { },
 }:
 
-pkgs.mkShell { }
+pkgs.mkShell { packages = with pkgs; [ astyle ]; }
