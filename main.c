@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
             if (read(mouse_fd, &ev, sizeof(ev)) != sizeof(ev)) break;
 
             if (ev.type == EV_REL) {
-                if (ev.code == REL_HWHEEL || ev.code == REL_HWHEEL_HI_RES) {
+                if (ev.code == REL_HWHEEL_HI_RES) {
                     // Protocol B move logic (from previous step)
                     last_scroll_time = current_time_ms();
                     finger_x += (ev.value * scroll_to_pixel_ratio);
@@ -202,6 +202,8 @@ int main(int argc, char* argv[]) {
                     }
                     syn(v_touch);
                     is_touching = 1;
+                    continue;
+                } else if (ev.code == REL_HWHEEL) {
                     continue;
                 } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
                     send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
