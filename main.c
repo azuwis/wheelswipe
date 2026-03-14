@@ -30,7 +30,6 @@
 #define MAX_Y 1079
 #define FINGER_SEP 200
 
-/* Original Defaults */
 #define DEFAULT_IDLE_TIMEOUT_MS 500
 #define DEFAULT_SCROLL_RATIO 1
 #define DEFAULT_SCROLL_TO_PIXEL_RATIO (-1)
@@ -39,26 +38,21 @@ static int idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
 static int scroll_ratio = DEFAULT_SCROLL_RATIO;
 static int scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
 
-static int mouse_fd, v_mouse, v_touch;
+static int mouse_fd = -1, v_mouse = -1, v_touch = -1;
 static int is_touching = 0, finger_x = 960;
 static volatile int running = 1;
+static long long last_scroll_time = 0;
 
-void load_config(void) {
-    char* env;
-    if ((env = getenv("IDLE_TIMEOUT_MS"))) idle_timeout_ms = atoi(env);
-    if ((env = getenv("SCROLL_RATIO"))) scroll_ratio = atoi(env);
-    if ((env = getenv("SCROLL_TO_PIXEL_RATIO")))
-        scroll_to_pixel_ratio = atoi(env);
-
-    printf("Config: Timeout=%dms, ScrollRatio=%d, Sensitivity=%d\n",
-           idle_timeout_ms, scroll_ratio, scroll_to_pixel_ratio);
+long long current_time_ms() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
 }
 
 void send_ev(int fd, int type, int code, int val) {
     struct input_event ev = {.type = type, .code = code, .value = val};
     gettimeofday(&ev.time, NULL);
-    if (write(fd, &ev, sizeof(ev)) < 0) {
-    }
+    if (fd >= 0 && write(fd, &ev, sizeof(ev)) < 0) {}
 }
 
 void syn(int fd) {
@@ -66,7 +60,7 @@ void syn(int fd) {
 }
 
 void lift_fingers() {
-    if (!is_touching) return;
+    if (!is_touching || v_touch < 0) return;
     for (int i = 0; i < 2; i++) {
         send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
         send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, -1);
@@ -79,40 +73,47 @@ void lift_fingers() {
     finger_x = 960;
 }
 
-void move_fingers(int delta) {
-    finger_x += (delta * scroll_to_pixel_ratio);
-    if (finger_x < 0) finger_x = 0;
-    if (finger_x > MAX_X) finger_x = MAX_X;
+// Robust cleanup: releases grab and closes all virtual devices
+void cleanup() {
+    printf("\nShutting down: releasing devices...\n");
+    lift_fingers();
+    if (mouse_fd >= 0) {
+        ioctl(mouse_fd, EVIOCGRAB, 0);
+        close(mouse_fd);
+        mouse_fd = -1;
+    }
+    if (v_mouse >= 0) {
+        close(v_mouse);
+        v_mouse = -1;
+    }
+    if (v_touch >= 0) {
+        close(v_touch);
+        v_touch = -1;
+    }
+}
 
-    for (int i = 0; i < 2; i++) {
-        send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
-        if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, 10 + i);
-        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X,
-                finger_x + (i == 1 ? FINGER_SEP : 0));
-        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, 500 + (i * 100));
-    }
-    if (!is_touching) {
-        send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
-        send_ev(v_touch, EV_KEY, BTN_TOOL_FINGER, 0);
-        send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
-    }
-    syn(v_touch);
-    is_touching = 1;
+void handle_signal(int sig) {
+    running = 0;
+}
+
+void load_config(void) {
+    char* env;
+    if ((env = getenv("IDLE_TIMEOUT_MS"))) idle_timeout_ms = atoi(env);
+    if ((env = getenv("SCROLL_RATIO"))) scroll_ratio = atoi(env);
+    if ((env = getenv("SCROLL_TO_PIXEL_RATIO"))) scroll_to_pixel_ratio = atoi(env);
 }
 
 int setup_dev(const char* name, int touch) {
     int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) return -1;
     ioctl(fd, UI_SET_EVBIT, EV_KEY);
     ioctl(fd, UI_SET_EVBIT, EV_SYN);
     if (touch) {
         ioctl(fd, UI_SET_EVBIT, EV_ABS);
-        int keys[] = {BTN_TOUCH, BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_LEFT};
-        for (int i = 0; i < 4; i++) ioctl(fd, UI_SET_KEYBIT, keys[i]);
-        int abs[] = {ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X,
-                     ABS_MT_POSITION_Y
-                    };
+        int keys[] = {BTN_TOUCH, BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP};
+        for (int i = 0; i < 3; i++) ioctl(fd, UI_SET_KEYBIT, keys[i]);
+        int abs[] = {ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X, ABS_MT_POSITION_Y};
         for (int i = 0; i < 4; i++) ioctl(fd, UI_SET_ABSBIT, abs[i]);
-
         struct uinput_abs_setup s = {.code = ABS_MT_SLOT, .absinfo.maximum = 1};
         ioctl(fd, UI_ABS_SETUP, &s);
         s.code = ABS_MT_TRACKING_ID;
@@ -124,9 +125,7 @@ int setup_dev(const char* name, int touch) {
         s.code = ABS_MT_POSITION_Y;
         s.absinfo.maximum = MAX_Y;
         ioctl(fd, UI_ABS_SETUP, &s);
-
         ioctl(fd, UI_SET_PROPBIT, INPUT_PROP_POINTER);
-        ioctl(fd, UI_SET_PROPBIT, INPUT_PROP_BUTTONPAD);
     } else {
         ioctl(fd, UI_SET_EVBIT, EV_REL);
         int rel[] = {REL_X, REL_Y, REL_WHEEL, REL_WHEEL_HI_RES};
@@ -134,10 +133,7 @@ int setup_dev(const char* name, int touch) {
         int btn[] = {BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA};
         for (int i = 0; i < 5; i++) ioctl(fd, UI_SET_KEYBIT, btn[i]);
     }
-    struct uinput_setup us = {.id.bustype = BUS_USB,
-                                  .id.vendor = 0x1234,
-                                  .id.product = touch ? 0x5679 : 0x5678
-    };
+    struct uinput_setup us = {.id.bustype = BUS_USB, .id.vendor = 0x1234, .id.product = touch ? 0x5679 : 0x5678};
     strncpy(us.name, name, UINPUT_MAX_NAME_SIZE);
     ioctl(fd, UI_DEV_SETUP, &us);
     ioctl(fd, UI_DEV_CREATE);
@@ -145,39 +141,77 @@ int setup_dev(const char* name, int touch) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) return 1;
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s /dev/input/eventX\n", argv[0]);
+        return 1;
+    }
     load_config();
-    signal(SIGTERM, (void*)exit);
-    signal(SIGINT, (void*)exit);
+
+    // Use sigaction for more reliable signal catching
+    struct sigaction sa = {.sa_handler = handle_signal};
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    atexit(cleanup); //
 
     mouse_fd = open(argv[1], O_RDONLY);
-    if (mouse_fd < 0 || ioctl(mouse_fd, EVIOCGRAB, 1) < 0) return 1;
+    if (mouse_fd < 0 || ioctl(mouse_fd, EVIOCGRAB, 1) < 0) {
+        perror("Failed to open or grab device");
+        return 1;
+    }
+
     v_mouse = setup_dev("V-Mouse", 0);
     v_touch = setup_dev("V-Touch", 1);
+    if (v_mouse < 0 || v_touch < 0) {
+        fprintf(stderr, "Failed to create virtual devices\n");
+        return 1;
+    }
 
     struct pollfd pfd = {.fd = mouse_fd, .events = POLLIN};
     struct input_event ev;
-    while (running) {
-        int ret = poll(&pfd, 1, is_touching ? idle_timeout_ms : 500);
-        if (ret == 0) {
-            lift_fingers();
-            continue;
-        }
-        if (ret < 0) break;
-        if (read(mouse_fd, &ev, sizeof(ev)) != sizeof(ev)) break;
 
-        if (ev.type == EV_REL) {
-            if (ev.code == REL_HWHEEL || ev.code == REL_HWHEEL_HI_RES) {
-                move_fingers(ev.value);
-                continue;
-            } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
-                send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
-                syn(v_mouse);
-                continue;
-            }
+    while (running) {
+        int ret = poll(&pfd, 1, is_touching ? 20 : -1);
+
+        if (is_touching && (current_time_ms() - last_scroll_time > idle_timeout_ms)) {
+            lift_fingers();
         }
-        send_ev(v_mouse, ev.type, ev.code, ev.value);
-        if (ev.type == EV_SYN) syn(v_mouse);
+
+        if (ret > 0 && (pfd.revents & POLLIN)) {
+            if (read(mouse_fd, &ev, sizeof(ev)) != sizeof(ev)) break;
+
+            if (ev.type == EV_REL) {
+                if (ev.code == REL_HWHEEL || ev.code == REL_HWHEEL_HI_RES) {
+                    // Protocol B move logic (from previous step)
+                    last_scroll_time = current_time_ms();
+                    finger_x += (ev.value * scroll_to_pixel_ratio);
+                    if (finger_x < 0) finger_x = 0;
+                    if (finger_x > MAX_X) finger_x = MAX_X;
+
+                    if (!is_touching) {
+                        send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
+                        send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
+                        for (int i = 0; i < 2; i++) {
+                            send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
+                            send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, 100 + i);
+                        }
+                    }
+                    for (int i = 0; i < 2; i++) {
+                        send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
+                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
+                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, 500 + (i * 100));
+                    }
+                    syn(v_touch);
+                    is_touching = 1;
+                    continue;
+                } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
+                    send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
+                    syn(v_mouse);
+                    continue;
+                }
+            }
+            send_ev(v_mouse, ev.type, ev.code, ev.value);
+            if (ev.type == EV_SYN) syn(v_mouse);
+        }
     }
     return 0;
 }
