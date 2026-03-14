@@ -180,11 +180,25 @@ int main(int argc, char* argv[]) {
     struct pollfd pfd = {.fd = mouse_fd, .events = POLLIN};
     struct input_event ev;
 
-    while (running) {
-        int ret = poll(&pfd, 1, is_touching ? 20 : -1);
+        while (running) {
+        int timeout = -1; // Wait forever by default
 
-        if (is_touching && (current_time_ms() - last_scroll_time > idle_timeout_ms)) {
+        if (is_touching) {
+            long long elapsed = current_time_ms() - last_scroll_time;
+            if (elapsed >= idle_timeout_ms) {
+                lift_fingers();
+                timeout = -1; // Reset to wait forever now that fingers are up
+            } else {
+                timeout = idle_timeout_ms - (int)elapsed;
+            }
+        }
+
+        int ret = poll(&pfd, 1, timeout);
+
+        // If poll timed out (ret == 0) and we are touching, it's time to lift
+        if (ret == 0 && is_touching) {
             lift_fingers();
+            continue;
         }
 
         if (ret > 0 && (pfd.revents & POLLIN)) {
