@@ -16,6 +16,7 @@
  *   sudo SCROLL_TO_PIXEL_RATIO=-2 ./wheelswipe /dev/input/event7
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/uinput.h>
 #include <poll.h>
@@ -50,9 +51,19 @@ long long current_time_ms() {
 }
 
 void send_ev(int fd, int type, int code, int val) {
-    struct input_event ev = {.type = type, .code = code, .value = val};
+    if (fd < 0) return;
+
+    struct input_event ev = { .type = type, .code = code, .value = val };
     gettimeofday(&ev.time, NULL);
-    if (fd >= 0 && write(fd, &ev, sizeof(ev)) < 0) {}
+
+    if (write(fd, &ev, sizeof(ev)) < 0) {
+        fprintf(stderr, "Error writing to fd %d (type %d, code %d): ", fd, type, code);
+        perror("");
+
+        if (errno == ENODEV || errno == EBADF) {
+            running = 0;
+        }
+    }
 }
 
 void syn(int fd) {
