@@ -39,7 +39,7 @@ builtins.mapAttrs
   )
   {
     agent-sandbox = {
-      url = "https://github.com/archie-judd/agent-sandbox.nix";
+      url = "https://github.com/azuwis/agent-sandbox.nix";
     };
     nixpkgs = {
       url = "https://github.com/NixOS/nixpkgs";

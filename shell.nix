@@ -37,6 +37,7 @@ let
       ANTHROPIC_AUTH_TOKEN = "$ANTHROPIC_AUTH_TOKEN";
       ANTHROPIC_BASE_URL = "$ANTHROPIC_BASE_URL";
     };
+    restrictClosure = true;
   };
 in
 
