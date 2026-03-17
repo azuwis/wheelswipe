@@ -17,6 +17,7 @@ let
     binName = "claude";
     outName = "claude-sandboxed";
     allowedPackages = [
+      pkgs.cacert
       pkgs.coreutils
       pkgs.which
       pkgs.bash
@@ -36,6 +37,9 @@ let
     extraEnv = {
       ANTHROPIC_AUTH_TOKEN = "$ANTHROPIC_AUTH_TOKEN";
       ANTHROPIC_BASE_URL = "$ANTHROPIC_BASE_URL";
+      NIX_SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      SSL_CERT_DIR = "${pkgs.cacert}/etc/ssl/certs";
+      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
     };
     restrictClosure = true;
   };
