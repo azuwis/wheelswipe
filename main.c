@@ -214,7 +214,12 @@ int main(int argc, char* argv[]) {
         }
 
         if (ret > 0 && (pfd.revents & POLLIN)) {
-            if (read(mouse_fd, &ev, sizeof(ev)) != sizeof(ev)) break;
+            ssize_t n = read(mouse_fd, &ev, sizeof(ev));
+            if (n != sizeof(ev)) {
+                if (n < 0 && (errno == EINTR || errno == EAGAIN)) continue;
+                if (n < 0) perror("read failed");
+                break;
+            }
 
             if (ev.type == EV_REL) {
                 if (ev.code == REL_HWHEEL_HI_RES) {
