@@ -48,13 +48,13 @@ static int is_touching = 0, finger_x = 960;
 static volatile int running = 1;
 static long long last_scroll_time = 0;
 
-long long current_time_ms() {
+static long long current_time_ms(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
-void send_ev(int fd, int type, int code, int val) {
+static void send_ev(int fd, int type, int code, int val) {
     if (fd < 0) return;
 
     struct input_event ev = { .type = type, .code = code, .value = val };
@@ -68,11 +68,11 @@ void send_ev(int fd, int type, int code, int val) {
     }
 }
 
-void syn(int fd) {
+static void syn(int fd) {
     send_ev(fd, EV_SYN, SYN_REPORT, 0);
 }
 
-void lift_fingers() {
+static void lift_fingers(void) {
     if (!is_touching || v_touch < 0) return;
     for (int i = 0; i < 2; i++) {
         send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
@@ -87,7 +87,7 @@ void lift_fingers() {
 }
 
 // Robust cleanup: releases grab and closes all virtual devices
-void cleanup() {
+static void cleanup(void) {
     printf("\nShutting down: releasing devices...\n");
     lift_fingers();
     if (mouse_fd >= 0) {
@@ -105,11 +105,11 @@ void cleanup() {
     }
 }
 
-void handle_signal(int sig) {
+static void handle_signal(int sig) {
     running = 0;
 }
 
-void load_config(void) {
+static void load_config(void) {
     char* env;
     if ((env = getenv("IDLE_TIMEOUT_MS"))) {
         idle_timeout_ms = atoi(env);
@@ -125,7 +125,7 @@ void load_config(void) {
 #define IOCTL_OR_FAIL(fd, request, ...) \
     if (ioctl(fd, request, ##__VA_ARGS__) < 0) { perror(#request); close(fd); return -1; }
 
-int setup_dev(const char* name, int touch) {
+static int setup_dev(const char* name, int touch) {
     int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (fd < 0) {
         perror("Failed to open /dev/uinput");
