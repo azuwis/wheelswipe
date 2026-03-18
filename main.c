@@ -258,7 +258,6 @@ int main(int argc, char* argv[]) {
                     continue;
                 } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
                     send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
-                    syn(v_mouse);
                     continue;
                 }
             }
