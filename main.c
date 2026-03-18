@@ -224,6 +224,11 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        if (ret > 0 && (pfd.revents & (POLLERR | POLLHUP))) {
+            fprintf(stderr, "Device disconnected\n");
+            break;
+        }
+
         if (ret > 0 && (pfd.revents & POLLIN)) {
             ssize_t n = read(mouse_fd, &ev, sizeof(ev));
             if (n != sizeof(ev)) {
