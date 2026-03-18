@@ -7,6 +7,7 @@
  *
  * Environment variables:
  *   IDLE_TIMEOUT_MS - timeout to release touch (milliseconds), default 500
+ *   SCROLL_RATIO - vertical scroll multiplier, default 1
  *   SCROLL_TO_PIXEL_RATIO - scroll value to pixel ratio, default -1
  *
  * Compile:
