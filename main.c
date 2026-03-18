@@ -162,7 +162,8 @@ int setup_dev(const char* name, int touch) {
         for (int i = 0; i < 5; i++) IOCTL_OR_FAIL(fd, UI_SET_KEYBIT, btn[i]);
     }
     struct uinput_setup us = {.id.bustype = BUS_USB, .id.vendor = 0x1234, .id.product = touch ? 0x5679 : 0x5678};
-    strncpy(us.name, name, UINPUT_MAX_NAME_SIZE);
+    strncpy(us.name, name, UINPUT_MAX_NAME_SIZE - 1);
+    us.name[UINPUT_MAX_NAME_SIZE - 1] = '\0';
     IOCTL_OR_FAIL(fd, UI_DEV_SETUP, &us);
     IOCTL_OR_FAIL(fd, UI_DEV_CREATE);
     return fd;
@@ -263,7 +264,6 @@ int main(int argc, char* argv[]) {
                 }
             }
             send_ev(v_mouse, ev.type, ev.code, ev.value);
-            if (ev.type == EV_SYN) syn(v_mouse);
         }
     }
     return 0;
