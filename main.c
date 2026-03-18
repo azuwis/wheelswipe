@@ -96,10 +96,12 @@ static void cleanup(void) {
         mouse_fd = -1;
     }
     if (v_mouse >= 0) {
+        ioctl(v_mouse, UI_DEV_DESTROY);
         close(v_mouse);
         v_mouse = -1;
     }
     if (v_touch >= 0) {
+        ioctl(v_touch, UI_DEV_DESTROY);
         close(v_touch);
         v_touch = -1;
     }
