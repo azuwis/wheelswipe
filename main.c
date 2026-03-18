@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -59,8 +58,6 @@ void send_ev(int fd, int type, int code, int val) {
     if (fd < 0) return;
 
     struct input_event ev = { .type = type, .code = code, .value = val };
-    gettimeofday(&ev.time, NULL);
-
     if (write(fd, &ev, sizeof(ev)) < 0) {
         fprintf(stderr, "Error writing to fd %d (type %d, code %d): ", fd, type, code);
         perror("");
