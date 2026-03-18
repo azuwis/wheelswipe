@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
     struct sigaction sa = {.sa_handler = handle_signal};
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
-    atexit(cleanup); //
+    atexit(cleanup);
 
     mouse_fd = open(argv[1], O_RDONLY);
     if (mouse_fd < 0 || ioctl(mouse_fd, EVIOCGRAB, 1) < 0) {
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
     struct pollfd pfd = {.fd = mouse_fd, .events = POLLIN};
     struct input_event ev;
 
-        while (running) {
+    while (running) {
         int timeout = -1; // Wait forever by default
 
         if (is_touching) {
@@ -229,7 +229,6 @@ int main(int argc, char* argv[]) {
 
             if (ev.type == EV_REL) {
                 if (ev.code == REL_HWHEEL_HI_RES) {
-                    // Protocol B move logic (from previous step)
                     last_scroll_time = current_time_ms();
                     finger_x += (ev.value * scroll_to_pixel_ratio);
                     if (finger_x < 0) finger_x = 0;
