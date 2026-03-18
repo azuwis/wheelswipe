@@ -201,6 +201,12 @@ int main(int argc, char* argv[]) {
 
         int ret = poll(&pfd, 1, timeout);
 
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            perror("poll failed");
+            break;
+        }
+
         // If poll timed out (ret == 0) and we are touching, it's time to lift
         if (ret == 0 && is_touching) {
             lift_fingers();
