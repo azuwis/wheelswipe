@@ -31,6 +31,9 @@
 #define MAX_X 1919
 #define MAX_Y 1079
 #define FINGER_SEP 200
+#define TRACKING_ID_BASE 100
+#define TOUCH_Y_BASE 500
+#define TOUCH_Y_SPACING 100
 
 #define DEFAULT_IDLE_TIMEOUT_MS 500
 #define DEFAULT_SCROLL_RATIO 1
@@ -240,13 +243,13 @@ int main(int argc, char* argv[]) {
                         send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
                         for (int i = 0; i < 2; i++) {
                             send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
-                            send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, 100 + i);
+                            send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, TRACKING_ID_BASE + i);
                         }
                     }
                     for (int i = 0; i < 2; i++) {
                         send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
                         send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
-                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, 500 + (i * 100));
+                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, TOUCH_Y_BASE + (i * TOUCH_Y_SPACING));
                     }
                     syn(v_touch);
                     is_touching = 1;
