@@ -109,7 +109,13 @@ void handle_signal(int sig) {
 
 void load_config(void) {
     char* env;
-    if ((env = getenv("IDLE_TIMEOUT_MS"))) idle_timeout_ms = atoi(env);
+    if ((env = getenv("IDLE_TIMEOUT_MS"))) {
+        idle_timeout_ms = atoi(env);
+        if (idle_timeout_ms < 0) {
+            fprintf(stderr, "Warning: IDLE_TIMEOUT_MS must be >= 0, using default\n");
+            idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
+        }
+    }
     if ((env = getenv("SCROLL_RATIO"))) scroll_ratio = atoi(env);
     if ((env = getenv("SCROLL_TO_PIXEL_RATIO"))) scroll_to_pixel_ratio = atoi(env);
 }
