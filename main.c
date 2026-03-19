@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
                     last_scroll_time = current_time_ms();
                     finger_x += (ev.value * scroll_to_pixel_ratio);
                     if (finger_x < 0) finger_x = 0;
-                    if (finger_x > MAX_X) finger_x = MAX_X;
+                    if (finger_x > MAX_X - FINGER_SEP) finger_x = MAX_X - FINGER_SEP;
 
                     if (!is_touching) {
                         send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
