@@ -30,6 +30,7 @@
 
 #define MAX_X 1919
 #define MAX_Y 1079
+#define CENTER_X ((MAX_X + 1) / 2)
 #define FINGER_SEP 200
 #define TRACKING_ID_BASE 100
 #define TOUCH_Y_BASE 500
@@ -44,7 +45,7 @@ static int scroll_ratio = DEFAULT_SCROLL_RATIO;
 static int scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
 
 static int mouse_fd = -1, v_mouse = -1, v_touch = -1;
-static int is_touching = 0, finger_x = 960;
+static int is_touching = 0, finger_x = CENTER_X;
 static volatile int running = 1;
 static long long last_scroll_time = 0;
 
@@ -82,7 +83,7 @@ static void lift_fingers(void) {
     send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 0);
     syn(v_touch);
     is_touching = 0;
-    finger_x = 960;
+    finger_x = CENTER_X;
 }
 
 // Robust cleanup: releases grab and closes all virtual devices
