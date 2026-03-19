@@ -17,7 +17,7 @@ This tool bridges that gap by:
 
 - Linux with uinput support
 - Root privileges (for device access)
-- GCC and pthread library
+- GCC
 
 ## Build
 
@@ -57,8 +57,9 @@ sudo env IDLE_TIMEOUT_MS=300 SCROLL_TO_PIXEL_RATIO=-2 ./wheelswipe /dev/input/ev
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `IDLE_TIMEOUT_MS` | Time in milliseconds before releasing the simulated touch after scrolling stops | `500` |
-| `SCROLL_TO_PIXEL_RATIO` | Multiplier for converting scroll values to pixel movement. Negative values invert direction | `-1` |
+| `IDLE_TIMEOUT_MS` | Time in milliseconds before releasing the simulated touch after scrolling stops (must be > 0) | `500` |
+| `SCROLL_TO_PIXEL_RATIO` | Multiplier for converting scroll values to pixel movement. Negative values invert direction (must be != 0) | `-1` |
+| `SCROLL_RATIO` | Multiplier for vertical scroll passthrough (must be != 0) | `1` |
 
 ## How It Works
 
