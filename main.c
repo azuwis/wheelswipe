@@ -41,6 +41,9 @@
 #define DEFAULT_SCROLL_RATIO 1
 #define DEFAULT_SCROLL_TO_PIXEL_RATIO (-1)
 
+#define IOCTL_OR_FAIL(fd, request, ...) \
+    if (ioctl(fd, request, ##__VA_ARGS__) < 0) { perror(#request); close(fd); return -1; }
+
 static int idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
 static int scroll_ratio = DEFAULT_SCROLL_RATIO;
 static int scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
@@ -138,9 +141,6 @@ static void load_config(void) {
         }
     }
 }
-
-#define IOCTL_OR_FAIL(fd, request, ...) \
-    if (ioctl(fd, request, ##__VA_ARGS__) < 0) { perror(#request); close(fd); return -1; }
 
 static int setup_dev(const char* name, int touch) {
     int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
             if (ev.type == EV_REL) {
                 if (ev.code == REL_HWHEEL_HI_RES) {
                     last_scroll_time = current_time_ms();
-                    finger_x += (ev.value * scroll_to_pixel_ratio);
+                    finger_x += ev.value * scroll_to_pixel_ratio;
                     if (finger_x < 0) finger_x = 0;
                     if (finger_x > MAX_X - FINGER_SEP) finger_x = MAX_X - FINGER_SEP;
 
