@@ -74,7 +74,7 @@ sudo env IDLE_TIMEOUT_MS=300 SCROLL_TO_PIXEL_RATIO=-2 ./wheelswipe /dev/input/ev
 ## Supported Devices
 
 - Microsoft All-in-One Media Keyboard (primary target)
-- Any device that generates `REL_HWHEEL` or `REL_HWHEEL_HI_RES` events
+- Any device that generates `REL_HWHEEL_HI_RES` events
 
 ## Troubleshooting
 
