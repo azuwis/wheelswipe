@@ -11,7 +11,7 @@
  *   SCROLL_TO_PIXEL_RATIO - scroll value to pixel ratio, default -1
  *
  * Compile:
- *   gcc -o wheelswipe main.c
+ *   gcc -Wall -Wextra -o wheelswipe main.c
  * Run:
  *   sudo ./wheelswipe /dev/input/event7
  *   sudo SCROLL_TO_PIXEL_RATIO=-2 ./wheelswipe /dev/input/event7
@@ -33,6 +33,7 @@
 #define CENTER_X ((MAX_X + 1) / 2)
 #define FINGER_SEP 200
 #define TRACKING_ID_BASE 100
+#define TRACKING_ID_MAX 65535
 #define TOUCH_Y_BASE 500
 #define TOUCH_Y_SPACING 100
 
@@ -88,7 +89,8 @@ static void lift_fingers(void) {
 
 // Robust cleanup: releases grab and closes all virtual devices
 static void cleanup(void) {
-    fprintf(stderr, "\nShutting down: releasing devices...\n");
+    if (mouse_fd >= 0 || v_mouse >= 0 || v_touch >= 0)
+        fprintf(stderr, "\nShutting down: releasing devices...\n");
     lift_fingers();
     if (mouse_fd >= 0) {
         ioctl(mouse_fd, EVIOCGRAB, 0);
@@ -156,7 +158,7 @@ static int setup_dev(const char* name, int touch) {
         struct uinput_abs_setup s = {.code = ABS_MT_SLOT, .absinfo.maximum = 1};
         IOCTL_OR_FAIL(fd, UI_ABS_SETUP, &s);
         s.code = ABS_MT_TRACKING_ID;
-        s.absinfo.maximum = 65535;
+        s.absinfo.maximum = TRACKING_ID_MAX;
         IOCTL_OR_FAIL(fd, UI_ABS_SETUP, &s);
         s.code = ABS_MT_POSITION_X;
         s.absinfo.maximum = MAX_X;
@@ -194,8 +196,12 @@ int main(int argc, char* argv[]) {
     atexit(cleanup);
 
     mouse_fd = open(argv[1], O_RDONLY);
-    if (mouse_fd < 0 || ioctl(mouse_fd, EVIOCGRAB, 1) < 0) {
-        perror("Failed to open or grab device");
+    if (mouse_fd < 0) {
+        perror("Failed to open device");
+        return 1;
+    }
+    if (ioctl(mouse_fd, EVIOCGRAB, 1) < 0) {
+        perror("Failed to grab device");
         return 1;
     }
 
