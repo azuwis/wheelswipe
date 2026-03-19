@@ -1,5 +1,5 @@
 wheelswipe: main.c
-	gcc -o wheelswipe main.c
+	gcc -Wall -Wextra -o wheelswipe main.c
 
 clean:
 	rm wheelswipe

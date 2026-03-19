@@ -107,6 +107,7 @@ static void cleanup(void) {
 }
 
 static void handle_signal(int sig) {
+    (void)sig;
     running = 0;
 }
 
