@@ -259,13 +259,10 @@ int main(int argc, char* argv[]) {
                     if (!is_touching) {
                         send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
                         send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
-                        for (int i = 0; i < 2; i++) {
-                            send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
-                            send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, TRACKING_ID_BASE + i);
-                        }
                     }
                     for (int i = 0; i < 2; i++) {
                         send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
+                        if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, TRACKING_ID_BASE + i);
                         send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
                         send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, TOUCH_Y_BASE + (i * TOUCH_Y_SPACING));
                     }
