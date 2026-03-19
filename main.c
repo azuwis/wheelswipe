@@ -146,7 +146,6 @@ static int setup_dev(const char* name, int touch) {
         return -1;
     }
     IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_KEY);
-    IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_SYN);
     if (touch) {
         IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_ABS);
         int keys[] = {BTN_TOUCH, BTN_TOOL_DOUBLETAP};
