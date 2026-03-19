@@ -114,13 +114,25 @@ static void load_config(void) {
     char* env;
     if ((env = getenv("IDLE_TIMEOUT_MS"))) {
         idle_timeout_ms = atoi(env);
-        if (idle_timeout_ms < 0) {
-            fprintf(stderr, "Warning: IDLE_TIMEOUT_MS must be >= 0, using default\n");
+        if (idle_timeout_ms <= 0) {
+            fprintf(stderr, "Warning: IDLE_TIMEOUT_MS must be > 0, using default (%d)\n", DEFAULT_IDLE_TIMEOUT_MS);
             idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
         }
     }
-    if ((env = getenv("SCROLL_RATIO"))) scroll_ratio = atoi(env);
-    if ((env = getenv("SCROLL_TO_PIXEL_RATIO"))) scroll_to_pixel_ratio = atoi(env);
+    if ((env = getenv("SCROLL_RATIO"))) {
+        scroll_ratio = atoi(env);
+        if (scroll_ratio == 0) {
+            fprintf(stderr, "Warning: SCROLL_RATIO must be != 0, using default (%d)\n", DEFAULT_SCROLL_RATIO);
+            scroll_ratio = DEFAULT_SCROLL_RATIO;
+        }
+    }
+    if ((env = getenv("SCROLL_TO_PIXEL_RATIO"))) {
+        scroll_to_pixel_ratio = atoi(env);
+        if (scroll_to_pixel_ratio == 0) {
+            fprintf(stderr, "Warning: SCROLL_TO_PIXEL_RATIO must be != 0, using default (%d)\n", DEFAULT_SCROLL_TO_PIXEL_RATIO);
+            scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
+        }
+    }
 }
 
 #define IOCTL_OR_FAIL(fd, request, ...) \
