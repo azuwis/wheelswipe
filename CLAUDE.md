@@ -21,7 +21,7 @@ make clean
 make format
 ```
 
-The project uses a simple Makefile that compiles main.c with gcc (no additional flags).
+The project uses a simple Makefile that compiles main.c with gcc using `-Wall -Wextra`.
 
 ## Running the Program
 
@@ -41,7 +41,7 @@ sudo evtest
 ## Architecture
 
 ### Single-File Design
-The entire program is contained in `main.c` (approximately 245 lines). There are no header files or modules.
+The entire program is contained in `main.c` (approximately 290 lines). There are no header files or modules.
 
 ### Event Processing Flow
 
@@ -59,7 +59,8 @@ The entire program is contained in `main.c` (approximately 245 lines). There are
 
 - **Multitouch Protocol**: Uses MT Protocol B (slot-based) with ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X/Y
 - **Virtual Touchpad Dimensions**: 1920x1080 (MAX_X=1919, MAX_Y=1079)
-- **Finger Separation**: 200 pixels (FINGER_SEP constant)
+- **Finger Separation**: 200 pixels (FINGER_SEP constant); finger_x is clamped to [0, MAX_X - FINGER_SEP] so finger 1 never exceeds MAX_X
+- **Touch Keys**: Uses BTN_TOUCH and BTN_TOOL_DOUBLETAP only (two-finger gesture); BTN_TOOL_FINGER is not used
 - **Polling Strategy**: Dynamic timeout - infinite when idle, calculated remaining time when touching
 - **Error Handling**: Checks for ENODEV/EBADF on write failures to gracefully exit on device removal
 
@@ -67,9 +68,9 @@ The entire program is contained in `main.c` (approximately 245 lines). There are
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| IDLE_TIMEOUT_MS | 500 | Time to wait after last scroll before releasing touch |
-| SCROLL_TO_PIXEL_RATIO | -1 | Multiplier for scroll→pixel conversion (negative inverts direction) |
-| SCROLL_RATIO | 1 | Multiplier for vertical scroll passthrough |
+| IDLE_TIMEOUT_MS | 500 | Time to wait after last scroll before releasing touch (must be > 0) |
+| SCROLL_TO_PIXEL_RATIO | -1 | Multiplier for scroll→pixel conversion (must be != 0; negative inverts direction) |
+| SCROLL_RATIO | 1 | Multiplier for vertical scroll passthrough (must be != 0) |
 
 ### State Management
 
