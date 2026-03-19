@@ -87,7 +87,7 @@ static void lift_fingers(void) {
 
 // Robust cleanup: releases grab and closes all virtual devices
 static void cleanup(void) {
-    printf("\nShutting down: releasing devices...\n");
+    fprintf(stderr, "\nShutting down: releasing devices...\n");
     lift_fingers();
     if (mouse_fd >= 0) {
         ioctl(mouse_fd, EVIOCGRAB, 0);
