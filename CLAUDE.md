@@ -60,7 +60,7 @@ The entire program is contained in `main.c` (approximately 290 lines). There are
 - **Multitouch Protocol**: Uses MT Protocol B (slot-based) with ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X/Y
 - **Virtual Touchpad Dimensions**: 1920x1080 (MAX_X=1919, MAX_Y=1079)
 - **Finger Separation**: 200 pixels (FINGER_SEP constant); finger_x is clamped to [0, MAX_X - FINGER_SEP] so finger 1 never exceeds MAX_X
-- **Touch Keys**: Registers BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP. On touch-down only BTN_TOUCH and BTN_TOOL_DOUBLETAP are set to 1; BTN_TOOL_FINGER is sent as 0 on lift. BTN_TOOL_FINGER must remain registered and sent on lift — removing it causes applications (e.g. Firefox) to misinterpret two-finger swipes as zoom-out gestures instead of navigation gestures, because libinput uses BTN_TOOL_FINGER device capability to distinguish touchpad gesture types
+- **Touch Keys**: Registers BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP. Touch-down sends BTN_TOUCH=1 and BTN_TOOL_DOUBLETAP=1; BTN_TOOL_FINGER is intentionally not set to 1 (correct MT Protocol B behavior: BTN_TOOL_FINGER=1 is for single-finger contact, BTN_TOOL_DOUBLETAP=1 is for two-finger). Lift clears all three to 0. BTN_TOOL_FINGER must remain registered (via UI_SET_KEYBIT) and cleared on lift — removing it causes applications (e.g. Firefox) to misinterpret two-finger swipes as zoom-out gestures, because libinput uses BTN_TOOL_FINGER device capability to identify the device as a proper touchpad
 - **Polling Strategy**: Dynamic timeout - infinite when idle, calculated remaining time when touching
 - **Error Handling**: Checks for ENODEV/EBADF on write failures to gracefully exit on device removal
 
