@@ -84,6 +84,7 @@ static void lift_fingers(void) {
         send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, -1);
     }
     send_ev(v_touch, EV_KEY, BTN_TOUCH, 0);
+    send_ev(v_touch, EV_KEY, BTN_TOOL_FINGER, 0);
     send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 0);
     syn(v_touch);
     is_touching = 0;
@@ -151,8 +152,8 @@ static int setup_dev(const char* name, int touch) {
     IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_KEY);
     if (touch) {
         IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_ABS);
-        int keys[] = {BTN_TOUCH, BTN_TOOL_DOUBLETAP};
-        for (int i = 0; i < 2; i++) IOCTL_OR_FAIL(fd, UI_SET_KEYBIT, keys[i]);
+        int keys[] = {BTN_TOUCH, BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP};
+        for (int i = 0; i < 3; i++) IOCTL_OR_FAIL(fd, UI_SET_KEYBIT, keys[i]);
         int abs[] = {ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X, ABS_MT_POSITION_Y};
         for (int i = 0; i < 4; i++) IOCTL_OR_FAIL(fd, UI_SET_ABSBIT, abs[i]);
         struct uinput_abs_setup s = {.code = ABS_MT_SLOT, .absinfo.maximum = 1};
