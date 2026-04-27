@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
                 lift_fingers();
                 timeout = -1; // Reset to wait forever now that fingers are up
             } else {
-                timeout = idle_timeout_ms - (int)elapsed;
+                timeout = (int)(idle_timeout_ms - elapsed);
             }
         }
 
