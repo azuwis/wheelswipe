@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
     sigaction(SIGINT, &sa, NULL);
     atexit(cleanup);
 
-    mouse_fd = open(argv[1], O_RDONLY);
+    mouse_fd = open(argv[1], O_RDONLY | O_NONBLOCK);
     if (mouse_fd < 0) {
         perror("Failed to open device");
         return 1;
@@ -249,45 +249,48 @@ int main(int argc, char* argv[]) {
         }
 
         if (ret > 0 && (pfd.revents & POLLIN)) {
-            ssize_t n = read(mouse_fd, &ev, sizeof(ev));
-            if (n != sizeof(ev)) {
-                if (n < 0 && (errno == EINTR || errno == EAGAIN)) continue;
-                if (n < 0) perror("read failed");
-                break;
-            }
-
-            if (ev.type == EV_REL) {
-                if (ev.code == REL_HWHEEL_HI_RES) {
-                    last_scroll_time = current_time_ms();
-                    finger_x += ev.value * scroll_to_pixel_ratio;
-                    if (finger_x < 0) finger_x = 0;
-                    if (finger_x > MAX_X - FINGER_SEP) finger_x = MAX_X - FINGER_SEP;
-
-                    if (!is_touching) {
-                        send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
-                        send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
-                    }
-                    for (int i = 0; i < 2; i++) {
-                        send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
-                        if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, next_tracking_id + i);
-                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
-                        send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, TOUCH_Y_BASE + (i * TOUCH_Y_SPACING));
-                    }
-                    syn(v_touch);
-                    if (!is_touching) {
-                        next_tracking_id += 2;
-                        if (next_tracking_id + 1 > TRACKING_ID_MAX) next_tracking_id = TRACKING_ID_BASE;
-                    }
-                    is_touching = 1;
-                    continue;
-                } else if (ev.code == REL_HWHEEL) {
-                    continue;
-                } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
-                    send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
-                    continue;
+            while (1) {
+                ssize_t n = read(mouse_fd, &ev, sizeof(ev));
+                if (n != sizeof(ev)) {
+                    if (n < 0 && (errno == EINTR || errno == EAGAIN)) break;
+                    if (n < 0) perror("read failed");
+                    running = 0;
+                    break;
                 }
+
+                if (ev.type == EV_REL) {
+                    if (ev.code == REL_HWHEEL_HI_RES) {
+                        last_scroll_time = current_time_ms();
+                        finger_x += ev.value * scroll_to_pixel_ratio;
+                        if (finger_x < 0) finger_x = 0;
+                        if (finger_x > MAX_X - FINGER_SEP) finger_x = MAX_X - FINGER_SEP;
+
+                        if (!is_touching) {
+                            send_ev(v_touch, EV_KEY, BTN_TOUCH, 1);
+                            send_ev(v_touch, EV_KEY, BTN_TOOL_DOUBLETAP, 1);
+                        }
+                        for (int i = 0; i < 2; i++) {
+                            send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
+                            if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, next_tracking_id + i);
+                            send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
+                            send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, TOUCH_Y_BASE + (i * TOUCH_Y_SPACING));
+                        }
+                        syn(v_touch);
+                        if (!is_touching) {
+                            next_tracking_id += 2;
+                            if (next_tracking_id + 1 > TRACKING_ID_MAX) next_tracking_id = TRACKING_ID_BASE;
+                        }
+                        is_touching = 1;
+                        continue;
+                    } else if (ev.code == REL_HWHEEL) {
+                        continue;
+                    } else if (ev.code == REL_WHEEL || ev.code == REL_WHEEL_HI_RES) {
+                        send_ev(v_mouse, ev.type, ev.code, ev.value * scroll_ratio);
+                        continue;
+                    }
+                }
+                send_ev(v_mouse, ev.type, ev.code, ev.value);
             }
-            send_ev(v_mouse, ev.type, ev.code, ev.value);
         }
     }
     return 0;
