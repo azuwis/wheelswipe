@@ -41,7 +41,7 @@ sudo evtest
 ## Architecture
 
 ### Single-File Design
-The entire program is contained in `main.c` (approximately 300 lines). There are no header files or modules.
+The entire program is contained in `main.c`. There are no header files or modules.
 
 ### Event Processing Flow
 
@@ -60,7 +60,9 @@ The entire program is contained in `main.c` (approximately 300 lines). There are
 
 - **Multitouch Protocol**: Uses MT Protocol B (slot-based) with ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_X/Y
 - **Virtual Touchpad Dimensions**: 1920x1080 (MAX_X=1919, MAX_Y=1079)
+- **Finger Positions**: X: finger 0 at `finger_x`, finger 1 at `finger_x + FINGER_SEP` (200px apart). Y: fixed at TOUCH_Y_BASE=500 (finger 0) and TOUCH_Y_BASE+TOUCH_Y_SPACING=600 (finger 1). Both well within screen bounds.
 - **Finger Separation**: 200 pixels (FINGER_SEP constant); finger_x is clamped to [0, MAX_X - FINGER_SEP] so finger 1 never exceeds MAX_X
+- **Tracking IDs**: Each new touch-down gets fresh IDs (`next_tracking_id` and `next_tracking_id+1`), incremented by 2 per touch cycle and wrapping at TRACKING_ID_MAX. This ensures receivers don't misinterpret a new touch as a continuation of a prior one.
 - **Touch Keys**: Registers BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP. Touch-down sends BTN_TOUCH=1 and BTN_TOOL_DOUBLETAP=1; BTN_TOOL_FINGER is intentionally not set to 1 (correct MT Protocol B behavior: BTN_TOOL_FINGER=1 is for single-finger contact, BTN_TOOL_DOUBLETAP=1 is for two-finger). Lift clears all three to 0. BTN_TOOL_FINGER must remain registered (via UI_SET_KEYBIT) and cleared on lift — removing it causes applications (e.g. Firefox) to misinterpret two-finger swipes as zoom-out gestures, because libinput uses BTN_TOOL_FINGER device capability to identify the device as a proper touchpad
 - **Polling Strategy**: Device opened with O_NONBLOCK; poll() with dynamic timeout (infinite when idle, calculated remaining time when touching) wakes on POLLIN, then drains all available events in a read loop before re-entering poll
 - **Error Handling**: Checks for ENODEV/EBADF on write failures to gracefully exit on device removal
@@ -79,6 +81,7 @@ Global state variables:
 - `is_touching`: Whether virtual touch is currently active
 - `finger_x`: Current X position of the simulated fingers
 - `last_scroll_time`: Timestamp of last scroll event (for timeout calculation)
+- `next_tracking_id`: Base tracking ID for the next touch cycle (incremented by 2 each cycle)
 - `running`: Signal handler flag for graceful shutdown
 
 ### Cleanup and Signal Handling
