@@ -172,8 +172,8 @@ static int setup_dev(const char* name, int touch) {
         IOCTL_OR_FAIL(fd, UI_SET_EVBIT, EV_REL);
         int rel[] = {REL_X, REL_Y, REL_WHEEL, REL_WHEEL_HI_RES};
         for (int i = 0; i < 4; i++) IOCTL_OR_FAIL(fd, UI_SET_RELBIT, rel[i]);
-        int btn[] = {BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA};
-        for (int i = 0; i < 5; i++) IOCTL_OR_FAIL(fd, UI_SET_KEYBIT, btn[i]);
+        int btn[] = {BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA, BTN_FORWARD, BTN_BACK};
+        for (int i = 0; i < 7; i++) IOCTL_OR_FAIL(fd, UI_SET_KEYBIT, btn[i]);
     }
     struct uinput_setup us = {.id.bustype = BUS_USB, .id.vendor = 0x1234, .id.product = touch ? 0x5679 : 0x5678};
     strncpy(us.name, name, UINPUT_MAX_NAME_SIZE - 1);
