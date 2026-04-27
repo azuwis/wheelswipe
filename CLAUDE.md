@@ -52,7 +52,8 @@ The entire program is contained in `main.c` (approximately 290 lines). There are
 3. **Event Translation**:
    - REL_HWHEEL_HI_RES events → two-finger horizontal swipe on virtual touchpad
    - REL_HWHEEL events → ignored (to prevent duplicates)
-   - All other events → forwarded to V-Mouse
+   - REL_WHEEL/REL_WHEEL_HI_RES events → forwarded to V-Mouse with SCROLL_RATIO multiplier applied
+   - All other events → forwarded to V-Mouse as-is
 4. **Timeout Management**: Uses poll() with dynamic timeout to release simulated touch after idle period
 
 ### Key Technical Details
@@ -102,9 +103,6 @@ nix-shell
 
 The shell.nix provides:
 - astyle (code formatter)
-- claude-sandboxed (sandboxed Claude Code binary with restricted closure)
-
-Dependencies are managed via sources.nix with a custom update mechanism for nixpkgs and agent-sandbox.nix.
 
 ## Code Style
 
