@@ -49,8 +49,8 @@ static int scroll_ratio = DEFAULT_SCROLL_RATIO;
 static int scroll_to_pixel_ratio = DEFAULT_SCROLL_TO_PIXEL_RATIO;
 
 static int mouse_fd = -1, v_mouse = -1, v_touch = -1;
-static int is_touching = 0, finger_x = CENTER_X;
-static volatile int running = 1;
+static int is_touching = 0, finger_x = CENTER_X, next_tracking_id = TRACKING_ID_BASE;
+static volatile sig_atomic_t running = 1;
 static long long last_scroll_time = 0;
 
 static long long current_time_ms(void) {
@@ -269,11 +269,15 @@ int main(int argc, char* argv[]) {
                     }
                     for (int i = 0; i < 2; i++) {
                         send_ev(v_touch, EV_ABS, ABS_MT_SLOT, i);
-                        if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, TRACKING_ID_BASE + i);
+                        if (!is_touching) send_ev(v_touch, EV_ABS, ABS_MT_TRACKING_ID, next_tracking_id + i);
                         send_ev(v_touch, EV_ABS, ABS_MT_POSITION_X, finger_x + (i == 1 ? FINGER_SEP : 0));
                         send_ev(v_touch, EV_ABS, ABS_MT_POSITION_Y, TOUCH_Y_BASE + (i * TOUCH_Y_SPACING));
                     }
                     syn(v_touch);
+                    if (!is_touching) {
+                        next_tracking_id += 2;
+                        if (next_tracking_id + 1 > TRACKING_ID_MAX) next_tracking_id = TRACKING_ID_BASE;
+                    }
                     is_touching = 1;
                     continue;
                 } else if (ev.code == REL_HWHEEL) {
