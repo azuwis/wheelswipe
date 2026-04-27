@@ -41,6 +41,7 @@
 #define DEFAULT_SCROLL_RATIO 1
 #define DEFAULT_SCROLL_TO_PIXEL_RATIO (-1)
 
+/* ##__VA_ARGS__ is a GNU extension supported by both gcc and clang */
 #define IOCTL_OR_FAIL(fd, request, ...) \
     if (ioctl(fd, request, ##__VA_ARGS__) < 0) { perror(#request); close(fd); return -1; }
 
